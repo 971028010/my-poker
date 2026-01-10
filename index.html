@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>德州扑克 AI 教练</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部区域 -->
+        <header class="header">
+            <h1>🃏 德州扑克 AI 教练</h1>
+            <p class="subtitle">基于 GTO 策略的实时分析</p>
+        </header>
+
+        <!-- API Key 设置区域 -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="setting-item">
+                <label for="apiKey">Google AI Studio API Key:</label>
+                <div class="input-group">
+                    <input type="password" id="apiKey" placeholder="输入你的 API Key">
+                    <button id="toggleKeyVisibility" class="icon-btn" title="显示/隐藏">👁️</button>
+                </div>
+                <button id="saveApiKey" class="btn btn-primary">保存并连接</button>
+            </div>
+            <div class="connection-status" id="connectionStatus">
+                <span class="status-dot disconnected"></span>
+                <span class="status-text">未连接</span>
+            </div>
+        </div>
+
+        <!-- 视频显示区域 -->
+        <div class="video-container">
+            <video id="videoElement" autoplay playsinline muted></video>
+            <canvas id="captureCanvas" style="display: none;"></canvas>
+            <div class="video-overlay" id="videoOverlay">
+                <p>点击下方按钮启动摄像头</p>
+            </div>
+        </div>
+
+        <!-- 控制按钮 -->
+        <div class="controls">
+            <button id="startCamera" class="btn btn-success">
+                <span class="btn-icon">📷</span>
+                启动摄像头
+            </button>
+            <button id="stopCamera" class="btn btn-danger" disabled>
+                <span class="btn-icon">⏹️</span>
+                停止摄像头
+            </button>
+            <button id="switchCamera" class="btn btn-secondary" disabled>
+                <span class="btn-icon">🔄</span>
+                切换摄像头
+            </button>
+        </div>
+
+        <!-- AI 分析结果区域 -->
+        <div class="analysis-panel">
+            <h2>📊 AI 分析结果</h2>
+            <div class="analysis-content" id="analysisContent">
+                <div class="placeholder">
+                    <p>等待分析...</p>
+                    <p class="hint">启动摄像头并连接 API 后，AI 将每 2 秒分析一次画面</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 建议显示区域 -->
+        <div class="recommendation-panel" id="recommendationPanel">
+            <div class="recommendation-header">
+                <h3>🎯 GTO 建议</h3>
+            </div>
+            <div class="recommendation-content" id="recommendationContent">
+                <div class="action-badge waiting">等待分析</div>
+            </div>
+        </div>
+
+        <!-- 历史记录 -->
+        <div class="history-panel">
+            <h3>📜 分析历史</h3>
+            <div class="history-list" id="historyList">
+                <p class="empty-history">暂无历史记录</p>
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="label">分析间隔:</span>
+                <span class="value">2秒</span>
+            </div>
+            <div class="status-item">
+                <span class="label">已分析:</span>
+                <span class="value" id="analysisCount">0</span>
+            </div>
+            <div class="status-item">
+                <span class="label">状态:</span>
+                <span class="value" id="currentStatus">待机</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js" type="module"></script>
+</body>
+</html>
