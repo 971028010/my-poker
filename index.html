@@ -10,33 +10,36 @@
     <div class="container">
         <header class="header">
             <h1>🃏 德州扑克 AI 教练</h1>
-            <p class="subtitle">拍照上传 · 稳定分析</p>
+            <p class="subtitle">拍照上传 · 稳定分析版</p>
         </header>
 
         <div class="settings-panel">
-            <input type="password" id="apiKey" placeholder="粘贴你的 API Key">
-            <button id="saveApiKey" class="btn btn-primary">保存 Key</button>
-            <div id="currentStatus" style="margin-top:10px; font-size:0.8rem; color:#94a3b8;">待机</div>
+            <div class="input-group">
+                <input type="password" id="apiKey" placeholder="粘贴 API Key (AIza...)">
+                <button id="saveApiKey" class="btn btn-primary">保存 Key</button>
+            </div>
+            <div id="currentStatus" class="status-info">等待初始化...</div>
         </div>
 
         <div class="video-container">
             <video id="videoElement" autoplay playsinline muted></video>
             <canvas id="captureCanvas" style="display: none;"></canvas>
-            <div class="video-overlay" id="videoOverlay">请点击下方按钮启动摄像头</div>
+            <div class="video-overlay" id="videoOverlay">点击下方开启摄像头</div>
         </div>
 
         <div class="controls">
             <button id="startCamera" class="btn btn-secondary">📷 开启摄像头</button>
-            </div>
+            <button id="captureBtn" class="btn btn-success" style="font-size: 1.2rem; margin-top: 10px;">📸 分析当前画面</button>
+        </div>
 
         <div class="recommendation-panel">
             <div id="recommendationContent">
-                <div class="action-badge waiting">等待拍照</div>
+                <div class="action-badge waiting">准备中</div>
             </div>
         </div>
 
         <div class="analysis-panel">
-            <div id="analysisContent" class="analysis-content">分析结果将显示在这里...</div>
+            <div id="analysisContent" class="analysis-content">分析结果将在此显示...</div>
         </div>
     </div>
     <script src="app.js"></script>
