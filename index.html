@@ -3,21 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>德州 AI 教练 - 稳定版</title>
+    <title>德州 AI 教练 - DS版</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
             <h1>🃏 德州扑克 AI 教练</h1>
-            <p class="subtitle">拍照上传 · 稳定分析版</p>
+            <p class="subtitle">Gemini 识图 + DeepSeek 决策</p>
         </header>
 
         <div class="settings-panel">
             <div class="input-group">
-                <input type="password" id="apiKey" placeholder="粘贴 API Key (AIza...)">
-                <button id="saveApiKey" class="btn btn-primary">保存 Key</button>
+                <label>Google Gemini Key:</label>
+                <input type="text" id="geminiKey" placeholder="输入 AIza 开头的 Key">
             </div>
+            <div class="input-group">
+                <label>DeepSeek Key:</label>
+                <input type="text" id="dsKey" placeholder="输入 sk- 开头的 Key">
+            </div>
+            <button id="saveKeys" class="btn btn-primary">💾 保存所有 Key</button>
             <div id="currentStatus" class="status-info">等待初始化...</div>
         </div>
 
@@ -29,17 +34,12 @@
 
         <div class="controls">
             <button id="startCamera" class="btn btn-secondary">📷 开启摄像头</button>
-            <button id="captureBtn" class="btn btn-success" style="font-size: 1.2rem; margin-top: 10px;">📸 分析当前画面</button>
-        </div>
-
-        <div class="recommendation-panel">
-            <div id="recommendationContent">
-                <div class="action-badge waiting">准备中</div>
-            </div>
+            <button id="captureBtn" class="btn btn-success" style="font-size: 1.2rem; margin-top: 10px;">📸 拍照并分析建议</button>
         </div>
 
         <div class="analysis-panel">
-            <div id="analysisContent" class="analysis-content">分析结果将在此显示...</div>
+            <h3>🤖 AI 策略建议：</h3>
+            <div id="analysisContent" class="analysis-content">尚未开始分析...</div>
         </div>
     </div>
     <script src="app.js"></script>
