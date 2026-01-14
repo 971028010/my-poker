@@ -3,39 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>德州 AI 教练 - v11</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>德州 AI 教练 - v12</title>
+    <style>
+        /* 简单直观的样式，确保手机端适配 */
+        body { font-family: -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 15px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .settings-panel { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        .input-group { margin-bottom: 10px; }
+        input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #333; background: #000; color: #00ff88; box-sizing: border-box; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-success { background: #28a745; color: white; height: 60px; font-size: 1.1rem; }
+        .status-info { margin-top: 10px; font-size: 0.9rem; text-align: center; min-height: 1.2em; color: #00ff88; font-family: monospace; }
+        .video-container { position: relative; width: 100%; border-radius: 12px; overflow: hidden; background: #000; margin-bottom: 15px; }
+        video { width: 100%; display: block; }
+        .video-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666; }
+        .analysis-panel { background: #1e1e1e; padding: 15px; border-radius: 12px; min-height: 150px; white-space: pre-wrap; line-height: 1.5; }
+        h3 { margin-top: 0; color: #007bff; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    </style>
 </head>
 <body>
     <div class="container">
         <header class="header">
             <h1>🃏 德州扑克 AI 教练</h1>
-            <p class="subtitle">OpenAI GPT-4o 视觉版 (v11)</p>
+            <p style="color: #888;">OpenAI GPT-4o 深度联调 v12</p>
         </header>
 
         <div class="settings-panel">
             <div class="input-group">
-                <label>OpenAI API Key:</label>
-                <input type="text" id="openAIKey" placeholder="输入 sk- 开头的 Key">
+                <label style="display: block; margin-bottom: 5px; font-size: 0.8rem;">OpenAI API Key (sk-...):</label>
+                <input type="password" id="openAIKey" placeholder="在此粘贴你的 API Key">
             </div>
-            <button id="saveKeys" class="btn btn-primary">💾 保存 Key</button>
-            <div id="currentStatus" class="status-info">等待初始化...</div>
+            <button id="saveKeys" class="btn btn-primary">💾 保存 Key 到本地</button>
+            <div id="currentStatus" class="status-info">系统已就绪，请先保存 Key</div>
         </div>
 
         <div class="video-container">
             <video id="videoElement" autoplay playsinline muted></video>
             <canvas id="captureCanvas" style="display: none;"></canvas>
-            <div class="video-overlay" id="videoOverlay">点击下方开启摄像头</div>
+            <div class="video-overlay" id="videoOverlay">等待开启摄像头...</div>
         </div>
 
         <div class="controls">
             <button id="startCamera" class="btn btn-secondary">📷 开启摄像头</button>
-            <button id="captureBtn" class="btn btn-success" style="font-size: 1.2rem; margin-top: 10px;">📸 拍照并分析建议</button>
+            <button id="captureBtn" class="btn btn-success">📸 拍照并请求 AI 建议</button>
         </div>
 
         <div class="analysis-panel">
             <h3>🤖 AI 策略建议：</h3>
-            <div id="analysisContent" class="analysis-content">尚未开始分析...</div>
+            <div id="analysisContent" style="font-size: 0.95rem;">等待分析数据...</div>
         </div>
     </div>
     <script src="app.js"></script>
