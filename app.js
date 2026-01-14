@@ -1,135 +1,88 @@
 /**
- * 德州扑克 AI 教练 - 拍照分析最终版
+ * 德州扑克 AI 教练 - Gemini识图 + DeepSeek大脑版
  */
 
 const CONFIG = {
-    // 修正：在 v1beta 路径下，模型标识符需保持简洁
-    MODEL: 'gemini-1.5-flash', 
-    API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/',
-    SYSTEM_INSTRUCTION: `你是一个专业的德州扑克教练。请识别画面中的：
-    1. 手牌（你的两张底牌）
-    2. 公共牌（翻牌、转牌、河牌）
-    3. 底池和下注情况
-    根据 GTO 策略，给出 FOLD / CALL / CHECK / RAISE 建议并简短解释原因。`
+    GEMINI_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+    DS_URL: 'https://api.deepseek.com/chat/completions',
+    DS_MODEL: 'deepseek-chat'
 };
 
 const state = {
-    apiKey: localStorage.getItem('gemini_api_key') || '',
+    geminiKey: localStorage.getItem('gemini_api_key') || '',
+    dsKey: localStorage.getItem('ds_api_key') || '',
     videoStream: null,
     isAnalyzing: false
 };
 
 const elements = {
-    apiKeyInput: document.getElementById('apiKey'),
-    saveApiKey: document.getElementById('saveApiKey'),
+    // 假设你在 HTML 里增加了 dsKey 的输入框，如果没有，可以直接在代码里写死
+    currentStatus: document.getElementById('currentStatus'),
     videoElement: document.getElementById('videoElement'),
     captureCanvas: document.getElementById('captureCanvas'),
-    analysisContent: document.getElementById('analysisContent'),
-    recommendationContent: document.getElementById('recommendationContent'),
-    currentStatus: document.getElementById('currentStatus')
+    analysisContent: document.getElementById('analysisContent')
 };
 
-// 初始化逻辑
-document.addEventListener('DOMContentLoaded', () => {
-    if (state.apiKey) elements.apiKeyInput.value = state.apiKey;
-    
-    // 保存 Key 逻辑
-    elements.saveApiKey.onclick = () => {
-        const key = elements.apiKeyInput.value.trim();
-        if (key) {
-            state.apiKey = key;
-            localStorage.setItem('gemini_api_key', key);
-            updateStatus('✅ API Key 已保存');
-        } else {
-            alert('请输入 API Key');
-        }
-    };
-
-    // 绑定摄像头
-    document.getElementById('startCamera').onclick = startCamera;
-    
-    // 拍照分析按钮逻辑
-    document.getElementById('captureBtn').onclick = captureAndAnalyze;
-});
-
-async function startCamera() {
-    try {
-        // 请求环境摄像头（后置）
-        state.videoStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-        });
-        elements.videoElement.srcObject = state.videoStream;
-        document.getElementById('videoOverlay').classList.add('hidden');
-        updateStatus('📷 摄像头就绪');
-    } catch (e) {
-        alert('无法启动摄像头: ' + e.message + '。请检查是否开启 HTTPS 和权限。');
-    }
-}
+// ...（初始化和启动摄像头的代码保持不变）...
 
 async function captureAndAnalyze() {
-    if (!state.apiKey) return alert('请先保存有效 API Key');
+    // 这里建议你直接把 dsKey 填入，或者在 HTML 增加一个输入框
+    if (!state.geminiKey || !state.dsKey) return alert('请确保 Gemini Key 和 DeepSeek Key 都已保存');
     if (state.isAnalyzing) return;
     
     state.isAnalyzing = true;
-    updateStatus('🔍 正在识别牌局并计算策略...');
-    
+    updateStatus('🔍 第一步：Gemini 正在识别画面...');
+
+    // 1. 拍照并转为 Base64
     const canvas = elements.captureCanvas;
     const video = elements.videoElement;
-    
-    // 捕获当前帧
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
-    
-    // 转换为 Base64
     const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
 
-    // 构建标准 REST 请求 URL
-    const url = `${CONFIG.API_URL}${CONFIG.MODEL}:generateContent?key=${state.apiKey}`;
-    
     try {
-        const response = await fetch(url, {
+        // 第一步：让 Gemini 把图片转成文字描述
+        const geminiRes = await fetch(`${CONFIG.GEMINI_URL}?key=${state.geminiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{
                     parts: [
-                        { text: CONFIG.SYSTEM_INSTRUCTION },
+                        { text: "请精准描述这张德州扑克图片：我的手牌是什么？公共牌是什么？底池筹码大约多少？只需列出信息，不用分析。" },
                         { inline_data: { mime_type: "image/jpeg", data: base64Image } }
                     ]
                 }]
             })
         });
+        const geminiData = await geminiRes.json();
+        const tableInfo = geminiData.candidates[0].content.parts[0].text;
 
-        const data = await response.json();
-        
-        if (data.error) {
-            throw new Error(data.error.message);
-        }
+        updateStatus('🧠 第二步：DeepSeek 正在计算 GTO 策略...');
 
-        const text = data.candidates[0].content.parts[0].text;
-        displayResult(text);
+        // 第二步：把文字信息发给 DeepSeek 进行逻辑分析
+        const dsRes = await fetch(CONFIG.DS_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${state.dsKey}`
+            },
+            body: JSON.stringify({
+                model: CONFIG.DS_MODEL,
+                messages: [
+                    { role: "system", content: "你是一个专业的德州扑克 GTO 教练。我会给你牌局信息，请给出：建议动作（FOLD/CALL/RAISE）和理由。" },
+                    { role: "user", content: `当前牌局如下：${tableInfo}` }
+                ]
+            })
+        });
+        const dsData = await dsRes.json();
+        const advice = dsData.choices[0].message.content;
+
+        elements.analysisContent.innerText = advice;
         updateStatus('✅ 分析完成');
     } catch (e) {
-        console.error('API Error:', e);
         updateStatus('❌ 失败: ' + e.message);
     } finally {
         state.isAnalyzing = false;
     }
 }
-
-function displayResult(text) {
-    elements.analysisContent.innerText = text;
-    // 提取动作并展示
-    const actions = ['FOLD', 'CALL', 'CHECK', 'RAISE'];
-    let foundAction = 'WAIT';
-    for (const action of actions) {
-        if (text.toUpperCase().includes(action)) {
-            foundAction = action;
-            break;
-        }
-    }
-    elements.recommendationContent.innerHTML = `<div class="action-badge ${foundAction.toLowerCase()}">${foundAction}</div>`;
-}
-
-function updateStatus(t) { elements.currentStatus.innerText = t; }
