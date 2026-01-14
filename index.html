@@ -3,38 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>德州 AI 教练 - v8版</title>
+    <title>德州 AI 教练 - v9</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
             <h1>🃏 德州扑克 AI 教练</h1>
-            <p class="subtitle">DeepSeek 视觉分析 v8</p>
+            <p class="subtitle">Gemini 视觉分析 v9</p>
         </header>
-
         <div class="settings-panel">
             <div class="input-group">
-                <label>DeepSeek API Key:</label>
-                <input type="text" id="dsKey" placeholder="输入 sk- 开头的 Key">
+                <label>Gemini API Key:</label>
+                <input type="text" id="geminiKey" placeholder="输入 AIza 开头的 Key">
             </div>
             <button id="saveKeys" class="btn btn-primary">💾 保存 Key</button>
             <div id="currentStatus" class="status-info">等待初始化...</div>
         </div>
-
         <div class="video-container">
             <video id="videoElement" autoplay playsinline muted></video>
             <canvas id="captureCanvas" style="display: none;"></canvas>
             <div class="video-overlay" id="videoOverlay">点击下方开启摄像头</div>
         </div>
-
         <div class="controls">
             <button id="startCamera" class="btn btn-secondary">📷 开启摄像头</button>
             <button id="captureBtn" class="btn btn-success" style="font-size: 1.2rem; margin-top: 10px;">📸 拍照并分析建议</button>
         </div>
-
         <div class="analysis-panel">
-            <h3>🤖 AI 策略建议：</h3>
             <div id="analysisContent" class="analysis-content">尚未开始分析...</div>
         </div>
     </div>
