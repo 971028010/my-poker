@@ -1,5 +1,5 @@
 /**
- * 德州扑克 AI 教练 - 协作版 (路径彻底修复版)
+ * 德州扑克 AI 教练 - 协作版 (v6 路径精准修复版)
  */
 
 const state = {
@@ -33,7 +33,8 @@ function initApp() {
     document.getElementById('startCamera').onclick = startCamera;
     document.getElementById('captureBtn').onclick = captureAndAnalyze;
 
-    updateStatus('🚀 系统准备就绪-V5');
+    // 增加版本号标识，方便确认缓存是否清理
+    updateStatus('🚀 系统准备就绪-v6');
 }
 
 window.onload = initApp;
@@ -56,7 +57,7 @@ async function captureAndAnalyze() {
     if (state.isAnalyzing) return;
     
     state.isAnalyzing = true;
-    updateStatus('🔍 1/2: Gemini 正在识别...');
+    updateStatus('🔍 1/2: Gemini 正在识别牌局...');
     
     const canvas = document.getElementById('captureCanvas');
     const video = document.getElementById('videoElement');
@@ -65,7 +66,7 @@ async function captureAndAnalyze() {
     canvas.getContext('2d').drawImage(video, 0, 0);
     const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
 
-    // --- 核心修复：直接硬编码完整 URL，不使用任何变量拼接 ---
+    // --- v6 核心修复：确保 URL 路径中只有一个 models/ ---
     const geminiFullUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.geminiKey}`;
 
     try {
@@ -75,7 +76,7 @@ async function captureAndAnalyze() {
             body: JSON.stringify({
                 contents: [{
                     parts: [
-                        { text: "请精准列出：我的两张底牌、公共牌、目前的底池筹码。只需提供事实，不用分析。" },
+                        { text: "请精准识别并列出：我的两张底牌、公共牌、目前的底池筹码。仅列出事实，不写分析。" },
                         { inline_data: { mime_type: "image/jpeg", data: base64Image } }
                     ]
                 }]
@@ -86,7 +87,7 @@ async function captureAndAnalyze() {
         if (geminiData.error) throw new Error(geminiData.error.message);
         const cardInfo = geminiData.candidates[0].content.parts[0].text;
 
-        updateStatus('🧠 2/2: DeepSeek 正在决策...');
+        updateStatus('🧠 2/2: DeepSeek 正在思考策略...');
 
         const dsRes = await fetch('https://api.deepseek.com/chat/completions', {
             method: 'POST',
@@ -97,8 +98,8 @@ async function captureAndAnalyze() {
             body: JSON.stringify({
                 model: 'deepseek-chat',
                 messages: [
-                    { role: "system", content: "你是一个专业的德州扑克专家。根据提供的牌局，给出建议动作（FOLD/CALL/RAISE）和深刻的逻辑理由。" },
-                    { role: "user", content: `牌局：${cardInfo}` }
+                    { role: "system", content: "你是一个专业的德州扑克专家。根据提供的牌局，给出建议动作（FOLD/CALL/RAISE）和逻辑理由。" },
+                    { role: "user", content: `牌局描述：${cardInfo}` }
                 ]
             })
         });
@@ -110,6 +111,7 @@ async function captureAndAnalyze() {
         updateStatus('✅ 分析完成');
     } catch (e) {
         updateStatus('❌ 错误: ' + e.message);
+        console.error(e);
     } finally {
         state.isAnalyzing = false;
     }
