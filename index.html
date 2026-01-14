@@ -3,26 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>德州 AI 教练 - v6稳定版</title>
+    <title>德州 AI 教练 - v8版</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
             <h1>🃏 德州扑克 AI 教练</h1>
-            <p class="subtitle">Gemini 识图 + DeepSeek 决策 (v6)</p>
+            <p class="subtitle">DeepSeek 视觉分析 v8</p>
         </header>
 
         <div class="settings-panel">
             <div class="input-group">
-                <label>Google Gemini Key:</label>
-                <input type="text" id="geminiKey" placeholder="输入 AIza 开头的 Key">
-            </div>
-            <div class="input-group">
-                <label>DeepSeek Key:</label>
+                <label>DeepSeek API Key:</label>
                 <input type="text" id="dsKey" placeholder="输入 sk- 开头的 Key">
             </div>
-            <button id="saveKeys" class="btn btn-primary">💾 保存所有 Key</button>
+            <button id="saveKeys" class="btn btn-primary">💾 保存 Key</button>
             <div id="currentStatus" class="status-info">等待初始化...</div>
         </div>
 
