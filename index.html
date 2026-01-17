@@ -3,59 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>德州 AI 教练 - v12</title>
+    <title>德州 AI 教练 - v14</title>
+    <!-- 使用 Tailwind CSS 快速构建现代 UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 简单直观的样式，确保手机端适配 */
-        body { font-family: -apple-system, sans-serif; background: #121212; color: white; margin: 0; padding: 15px; }
-        .container { max-width: 500px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .settings-panel { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-        .input-group { margin-bottom: 10px; }
-        input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #333; background: #000; color: #00ff88; box-sizing: border-box; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-secondary { background: #6c757d; color: white; }
-        .btn-success { background: #28a745; color: white; height: 60px; font-size: 1.1rem; }
-        .status-info { margin-top: 10px; font-size: 0.9rem; text-align: center; min-height: 1.2em; color: #00ff88; font-family: monospace; }
-        .video-container { position: relative; width: 100%; border-radius: 12px; overflow: hidden; background: #000; margin-bottom: 15px; }
-        video { width: 100%; display: block; }
-        .video-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666; }
-        .analysis-panel { background: #1e1e1e; padding: 15px; border-radius: 12px; min-height: 150px; white-space: pre-wrap; line-height: 1.5; }
-        h3 { margin-top: 0; color: #007bff; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        body { background-color: #0f172a; color: #f8fafc; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        .scanner-line {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+            position: absolute;
+            width: 100%;
+            top: 0;
+            animation: scan 3s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        .action-chip:active { transform: scale(0.95); }
     </style>
 </head>
-<body>
-    <div class="container">
-        <header class="header">
-            <h1>🃏 德州扑克 AI 教练</h1>
-            <p style="color: #888;">OpenAI GPT-4o 深度联调 v12</p>
-        </header>
-
-        <div class="settings-panel">
-            <div class="input-group">
-                <label style="display: block; margin-bottom: 5px; font-size: 0.8rem;">OpenAI API Key (sk-...):</label>
-                <input type="password" id="openAIKey" placeholder="在此粘贴你的 API Key">
+<body class="p-4">
+    <div class="max-w-md mx-auto space-y-4">
+        
+        <!-- 1. 牌局路径记忆墙 -->
+        <div class="bg-slate-800 rounded-xl p-3 border border-slate-700 shadow-lg">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">牌局路径记忆</span>
+                <button id="clearHistory" class="text-xs text-red-400 hover:text-red-300">清空局内记忆</button>
             </div>
-            <button id="saveKeys" class="btn btn-primary">💾 保存 Key 到本地</button>
-            <div id="currentStatus" class="status-info">系统已就绪，请先保存 Key</div>
+            <div id="historyWall" class="flex flex-wrap gap-2">
+                <!-- 由 app.js 动态生成 -->
+            </div>
         </div>
 
-        <div class="video-container">
-            <video id="videoElement" autoplay playsinline muted></video>
-            <canvas id="captureCanvas" style="display: none;"></canvas>
-            <div class="video-overlay" id="videoOverlay">等待开启摄像头...</div>
+        <!-- 2. 模拟扫描取景器 & 预览层 -->
+        <div class="relative aspect-[4/3] bg-black rounded-2xl overflow-hidden border-2 border-slate-700 shadow-2xl">
+            <video id="videoElement" class="w-full h-full object-cover" autoplay playsinline muted></video>
+            
+            <!-- 扫描对齐框 -->
+            <div id="scanOverlay" class="absolute inset-8 border-2 border-blue-500/40 rounded-lg pointer-events-none">
+                <div class="scanner-line"></div>
+                <div class="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-blue-500"></div>
+                <div class="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-blue-500"></div>
+                <div class="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-blue-500"></div>
+                <div class="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-blue-500"></div>
+            </div>
+
+            <!-- 3. 拍照确认预览层 -->
+            <div id="previewLayer" class="absolute inset-0 bg-black hidden z-20">
+                <img id="previewImg" class="w-full h-full object-contain" src="" alt="预览">
+                <div class="absolute bottom-4 inset-x-0 flex justify-center space-x-6 px-4">
+                    <button id="retakeBtn" class="flex-1 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-bold text-sm">重拍</button>
+                    <button id="confirmBtn" class="flex-1 py-3 bg-green-600 hover:bg-green-500 rounded-xl font-bold text-sm shadow-lg">确认发送 AI</button>
+                </div>
+            </div>
+
+            <!-- 加载状态 -->
+            <div id="loadingOverlay" class="absolute inset-0 bg-slate-900/80 hidden z-30 flex flex-col items-center justify-center space-y-3">
+                <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <span id="currentStatus" class="text-sm text-blue-400 font-medium">AI 深度决策中...</span>
+            </div>
         </div>
 
-        <div class="controls">
-            <button id="startCamera" class="btn btn-secondary">📷 开启摄像头</button>
-            <button id="captureBtn" class="btn btn-success">📸 拍照并请求 AI 建议</button>
+        <!-- 4. 对手动作标记记录 -->
+        <div class="space-y-2">
+            <p class="text-[10px] text-slate-500 font-bold uppercase ml-1">记录当前对手动作</p>
+            <div class="grid grid-cols-4 gap-2" id="actionSelectors">
+                <button data-action="对手 Check" class="action-chip py-2 bg-slate-800 rounded-lg text-xs border border-slate-700">Check</button>
+                <button data-action="对手 Bet" class="action-chip py-2 bg-slate-800 rounded-lg text-xs border border-slate-700">Bet</button>
+                <button data-action="对手 Raise" class="action-chip py-2 bg-slate-800 rounded-lg text-xs border border-slate-700">Raise</button>
+                <button data-action="对手 All-in" class="action-chip py-2 bg-red-900/30 rounded-lg text-xs border border-red-900/50 text-red-400">All-in</button>
+            </div>
         </div>
 
-        <div class="analysis-panel">
-            <h3>🤖 AI 策略建议：</h3>
-            <div id="analysisContent" style="font-size: 0.95rem;">等待分析数据...</div>
+        <!-- 拍照分析按钮 -->
+        <button id="captureBtn" class="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black text-lg shadow-xl transform transition active:scale-95">
+            📸 捕捉画面并分析
+        </button>
+
+        <!-- 5. 精简化输出面板 -->
+        <div class="bg-slate-800/50 rounded-2xl p-4 border border-slate-700 min-h-[120px]">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-bold text-slate-400 flex items-center">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                    GTO 策略建议
+                </h3>
+            </div>
+            
+            <div id="placeholder" class="text-slate-600 text-sm italic py-4 text-center">
+                等待上传牌局数据...
+            </div>
+
+            <div id="aiResponse" class="hidden space-y-3">
+                <div class="flex items-end justify-between">
+                    <div>
+                        <p class="text-[10px] text-slate-500 uppercase font-bold">最优行动</p>
+                        <p id="resAction" class="text-3xl font-black text-green-400 tracking-tight">--</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold">建议尺度</p>
+                        <p id="resSizing" class="text-2xl font-bold text-white">--</p>
+                    </div>
+                </div>
+                <div class="pt-2 border-t border-slate-700">
+                    <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">核心理由</p>
+                    <p id="resReason" class="text-sm text-slate-300 leading-relaxed font-medium">--</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设置区 -->
+        <div class="pt-4 border-t border-slate-800">
+            <input type="password" id="openAIKey" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-500 focus:outline-none focus:border-blue-500" placeholder="OpenAI API Key (sk-...)">
+            <button id="saveKey" class="w-full mt-2 py-2 bg-slate-800 text-xs rounded-lg">💾 保存 Key 到本地</button>
         </div>
     </div>
+
+    <canvas id="captureCanvas" style="display:none;"></canvas>
     <script src="app.js"></script>
 </body>
 </html>
