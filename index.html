@@ -2,21 +2,28 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GTO 语音助手 Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>GTO 语音教练 Pro</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="app-container">
         <header>
             <div class="status-bar">
-                <span id="street-indicator" class="street-badge">Preflop</span>
-                <button id="settings-btn" class="icon-btn">⚙️</button>
+                <span id="street-indicator" class="street-badge">1/2 | Preflop</span>
             </div>
+            <button id="settings-btn" class="icon-btn">⚙️</button>
         </header>
 
         <main id="chat-stream">
-            <div class="system-msg">GTO 助手已就绪。<br>按住下方按钮说话，录入牌局信息。</div>
+            <div class="system-msg">
+                GTO 助手已就绪。<br>
+                1. 按住底部按钮说话<br>
+                2. 点击“获取建议”发送<br>
+                3. 支持简称：如 "红A" (Ah), "枪口" (UTG)
+            </div>
             </main>
 
         <footer class="controls">
@@ -29,22 +36,30 @@
             <div class="record-wrapper">
                 <button id="record-btn" class="record-btn">
                     <span class="icon">🎙️</span>
-                    <span class="text">按住说话</span>
+                    <span class="text">按住 说话</span>
                 </button>
-                <button id="next-hand-btn" class="secondary-btn">下一手牌</button>
+                <button id="next-hand-btn" class="secondary-btn">下一手</button>
             </div>
         </footer>
     </div>
 
     <div id="key-modal" class="modal hidden">
         <div class="modal-content">
-            <h3>设置 OpenAI Key</h3>
-            <p>你的 Key 将仅存储在本地浏览器中。</p>
-            <input type="password" id="api-key-input" placeholder="sk-..." />
-            <button id="save-key-btn">保存并开始</button>
-        </div>
-    </div>
+            <h3>♠️ 牌局设置</h3>
+            
+            <div class="setting-group">
+                <label>盲注级别 (SB / BB)</label>
+                <div class="input-row">
+                    <input type="number" id="sb-input" placeholder="1" value="1">
+                    <span class="divider">/</span>
+                    <input type="number" id="bb-input" placeholder="2" value="2">
+                </div>
+            </div>
 
-    <script src="app.js"></script>
-</body>
-</html>
+            <div class="setting-group">
+                <label>特殊规则</label>
+                <div class="toggle-row">
+                    <span>带抓 (Straddle)?</span>
+                    <input type="checkbox" id="straddle-toggle">
+                </div>
+                <div class="input-row" id="ante-row"
