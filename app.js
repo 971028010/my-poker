@@ -1,13 +1,15 @@
 /**
- * 德州扑克语音 GTO 教练 - 完整增强版
+ * 德州扑克语音 GTO 教练 - 修复配置版
  */
 
 // --- 状态管理 ---
 const state = {
     apiKey: localStorage.getItem('openai_api_key') || '',
+    // 默认配置
     gameConfig: JSON.parse(localStorage.getItem('poker_game_config')) || {
         sb: 1,
         bb: 2,
+        players: 8, // 默认8人桌
         straddle: false,
         ante: 0
     },
@@ -18,7 +20,7 @@ const state = {
     audioChunks: []
 };
 
-// --- DOM ---
+// --- DOM 获取 ---
 const dom = {
     recordBtn: document.getElementById('record-btn'),
     sendBtn: document.getElementById('send-gto-btn'),
@@ -30,27 +32,43 @@ const dom = {
     keyModal: document.getElementById('key-modal'),
     saveKeyBtn: document.getElementById('save-key-btn'),
     streetBadge: document.getElementById('street-indicator'),
-    // Settings Inputs
+    
+    // 输入框 DOM
     apiKeyInput: document.getElementById('api-key-input'),
     sbInput: document.getElementById('sb-input'),
     bbInput: document.getElementById('bb-input'),
+    playersInput: document.getElementById('players-input'), // 新增
     straddleInput: document.getElementById('straddle-toggle'),
     anteInput: document.getElementById('ante-input')
 };
 
 // --- 初始化 ---
 function init() {
+    // 强制绑定点击事件，防止 DOM 加载延迟问题
+    setupEventListeners();
+    
     if (!state.apiKey) {
         dom.keyModal.classList.remove('hidden');
     }
     updateStatusHeader();
-    setupEventListeners();
 }
 
 // --- 事件监听 ---
 function setupEventListeners() {
-    // 1. 设置保存
-    dom.saveKeyBtn.addEventListener('click', () => {
+    // 1. 打开设置弹窗
+    dom.settingsBtn.onclick = () => { // 使用 onclick 确保覆盖
+        dom.keyModal.classList.remove('hidden');
+        // 回填当前数据
+        dom.apiKeyInput.value = state.apiKey;
+        dom.sbInput.value = state.gameConfig.sb;
+        dom.bbInput.value = state.gameConfig.bb;
+        dom.playersInput.value = state.gameConfig.players || 8; // 回填人数
+        dom.straddleInput.checked = state.gameConfig.straddle;
+        dom.anteInput.value = state.gameConfig.ante;
+    };
+
+    // 2. 保存配置
+    dom.saveKeyBtn.onclick = () => {
         const key = dom.apiKeyInput.value.trim();
         if (key && key.startsWith('sk-')) {
             localStorage.setItem('openai_api_key', key);
@@ -60,6 +78,7 @@ function setupEventListeners() {
         const newConfig = {
             sb: Number(dom.sbInput.value) || 1,
             bb: Number(dom.bbInput.value) || 2,
+            players: Number(dom.playersInput.value) || 8, // 保存人数
             straddle: dom.straddleInput.checked,
             ante: Number(dom.anteInput.value) || 0
         };
@@ -69,19 +88,10 @@ function setupEventListeners() {
 
         dom.keyModal.classList.add('hidden');
         updateStatusHeader();
-    });
+        alert("配置已生效");
+    };
 
-    // 2. 打开设置
-    dom.settingsBtn.addEventListener('click', () => {
-        dom.keyModal.classList.remove('hidden');
-        dom.apiKeyInput.value = state.apiKey;
-        dom.sbInput.value = state.gameConfig.sb;
-        dom.bbInput.value = state.gameConfig.bb;
-        dom.straddleInput.checked = state.gameConfig.straddle;
-        dom.anteInput.value = state.gameConfig.ante;
-    });
-
-    // 3. 录音控制 (兼容 Touch)
+    // 3. 录音逻辑 (Touch/Mouse)
     const startHandler = (e) => { e.preventDefault(); startRecording(); };
     const stopHandler = (e) => { e.preventDefault(); stopRecording(); };
 
@@ -91,8 +101,8 @@ function setupEventListeners() {
     dom.recordBtn.addEventListener('touchend', stopHandler);
 
     // 4. 业务操作
-    dom.sendBtn.addEventListener('click', processGTORequest);
-    dom.nextHandBtn.addEventListener('click', resetHand);
+    dom.sendBtn.onclick = processGTORequest;
+    dom.nextHandBtn.onclick = resetHand;
 }
 
 // --- 录音流程 ---
@@ -113,7 +123,7 @@ async function startRecording() {
         state.isRecording = true;
         updateRecordBtnUI(true);
     } catch (err) {
-        alert("麦克风权限被拒绝，请检查浏览器设置");
+        alert("麦克风权限错误");
     }
 }
 
@@ -134,10 +144,10 @@ function updateRecordBtnUI(isRecording) {
     }
 }
 
-// --- Whisper 识别 + 队列管理 ---
+// --- Whisper ---
 async function handleAudioInput(blob) {
     const tempId = Date.now();
-    addPendingChip(tempId, "正在识别...", true);
+    addPendingChip(tempId, "👂 听写中...", true);
 
     try {
         const text = await callWhisperAPI(blob);
@@ -149,52 +159,38 @@ async function handleAudioInput(blob) {
             removePendingChip(tempId);
         }
     } catch (error) {
-        console.error(error);
         removePendingChip(tempId);
-        addBubble("⚠️ 语音识别失败，请检查网络或 Key", "system");
     }
 }
 
-// --- GTO 核心请求 ---
+// --- GTO Request (核心修改：注入人数参数) ---
 async function processGTORequest() {
     if (state.pendingTranscripts.length === 0) return;
 
-    // 合并文本
     const combinedText = state.pendingTranscripts.map(t => t.text).join("，");
-    
-    // 清空 UI 队列
     dom.audioQueue.innerHTML = '';
     state.pendingTranscripts = [];
     dom.pendingArea.classList.add('pending-hidden');
 
-    // 显示用户气泡
     addBubble(combinedText, 'user');
-    const loadingId = addBubble("🧠 AI 正在思考策略...", 'ai');
+    const loadingId = addBubble("🧠 分析牌局与赔率...", 'ai');
 
     try {
         const response = await callGPT4(combinedText);
         updateBubble(loadingId, response);
-        
-        // 更新牌局阶段
-        if (response.street) {
-            updateStatusHeader(response.street);
-        }
+        if (response.street) updateStatusHeader(response.street);
     } catch (error) {
-        console.error(error);
-        updateBubble(loadingId, { advice: { action: "Error", reasoning: "请求超时或 API 额度不足，请检查设置。" } });
+        updateBubble(loadingId, { advice: { action: "Error", reasoning: "API 请求失败" } });
     }
 }
 
-// --- OpenAI API 调用 ---
-
-// 1. Whisper (带词库)
+// --- API Calls ---
 async function callWhisperAPI(audioBlob) {
     const formData = new FormData();
     formData.append("file", audioBlob, "input.mp3");
     formData.append("model", "whisper-1");
     formData.append("language", "zh");
-    // 强化关键词库
-    const glossary = "德州扑克术语: 红A, 黑A, 方A, 草A, 红K, 黑Q, 方J, 草T. 枪口, UTG, 3B, 4B, Call, Check, Fold, All-in. 比如: 翻牌, 转牌, 河牌, 坚果, 杂色, 同花, 连张. 纠错: 黑头->黑桃";
+    const glossary = "德州扑克术语: 红A, 黑A, 方A, 草A, UTG, 3B, 4B, Call, Check, Fold, All-in, 翻牌, 转牌, 河牌, 坚果, 杂色, 同花, 连张. 纠错: 黑头->黑桃";
     formData.append("prompt", glossary);
 
     const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
@@ -206,12 +202,15 @@ async function callWhisperAPI(audioBlob) {
     return data.text;
 }
 
-// 2. GPT-4 (带上下文设置)
+// 核心修改：在 System Prompt 中加入 Players 信息
 async function callGPT4(newInput) {
-    const config = state.gameConfig;
+    const c = state.gameConfig;
     const gameContext = `
-    当前设置: 盲注${config.sb}/${config.bb}, 抓(Straddle): ${config.straddle?'是':'否'}, 前注:${config.ante}。
-    请根据此盲注结构计算赔率和加注尺度。
+    当前设置: 
+    - 盲注: ${c.sb}/${c.bb}
+    - 玩家人数: ${c.players}人桌 (注意位置范围松紧)
+    - 抓(Straddle): ${c.straddle?'开启 (Effective BB改变)':'关闭'}
+    - 前注(Ante): ${c.ante}
     `;
 
     const messages = [
@@ -219,15 +218,13 @@ async function callGPT4(newInput) {
             role: "system",
             content: `你是一个德州扑克GTO专家。请严格以JSON格式输出。
             
-            # 环境
+            # 环境参数
             ${gameContext}
 
-            # 核心指令
-            1. 识别简称：红/黑/方/草 -> 对应花色(h/s/d/c)。
-            2. 智能纠错：识别语音转录错误。
-            3. 输出格式(JSON Only)：
-               {"street": "Turn", "hero_hand": "AhKd", "board": ["Ts", "9c", "2h"], "advice": {"action": "Check", "sizing": "0", "reasoning": "简短战术理由"}}
-            4. 视角：始终以 Hero 为第一人称。
+            # 任务
+            1. 识别术语与花色 (红/黑/方/草 -> h/s/d/c)。
+            2. 输出 JSON: {"street": "...", "hero_hand": "...", "advice": {"action": "Check/Bet/Fold", "sizing": "数值", "reasoning": "简短理由"}}
+            3. 如果用户只说了动作没说手牌，尝试推断或请求补充。
             `
         },
         ...state.history,
@@ -256,8 +253,7 @@ async function callGPT4(newInput) {
     return JSON.parse(content);
 }
 
-// --- UI 辅助功能 ---
-
+// --- UI Helpers ---
 function addBubble(text, type) {
     const bubble = document.createElement('div');
     bubble.className = `bubble ${type}`;
@@ -271,54 +267,35 @@ function addBubble(text, type) {
 function updateBubble(id, data) {
     const bubble = document.getElementById(id);
     if (!bubble) return;
-
     if (data.advice) {
-        const { action, sizing, reasoning } = data.advice;
         bubble.innerHTML = `
-            <span class="action-highlight">${action} ${sizing !== '0' && sizing ? sizing : ''}</span>
-            <div class="reasoning">${reasoning}</div>
+            <span class="action-highlight">${data.advice.action} ${data.advice.sizing || ''}</span>
+            <div class="reasoning">${data.advice.reasoning}</div>
         `;
     } else {
-        bubble.innerText = "解析错误: " + JSON.stringify(data);
+        bubble.innerText = JSON.stringify(data);
     }
     dom.chatStream.scrollTop = dom.chatStream.scrollHeight;
 }
 
-// 队列 UI 管理
+// 队列删除
 function addPendingChip(id, text, isLoading) {
     const chip = document.createElement('div');
     chip.className = 'audio-chip';
     chip.id = `chip-${id}`;
-    chip.innerHTML = `
-        <span class="chip-text">${text}</span>
-        ${isLoading ? '⏳' : '<span class="delete-chip" onclick="window.deletePending(' + id + ')">✖</span>'}
-    `;
+    chip.innerHTML = `<span class="chip-text">${text}</span>${isLoading?'⏳':'<span class="delete-chip" onclick="window.deletePending('+id+')">✖</span>'}`;
     dom.audioQueue.appendChild(chip);
     dom.audioQueue.scrollLeft = dom.audioQueue.scrollWidth;
 }
-
-function updatePendingChip(id, newText) {
+function updatePendingChip(id, t) {
     const chip = document.getElementById(`chip-${id}`);
-    if (chip) {
-        chip.innerHTML = `
-            <span class="chip-text">"${newText}"</span>
-            <span class="delete-chip" onclick="window.deletePending(${id})">✖</span>
-        `;
-    }
+    if(chip) chip.innerHTML = `<span class="chip-text">"${t}"</span><span class="delete-chip" onclick="window.deletePending(${id})">✖</span>`;
 }
-
-function removePendingChip(id) {
-    const chip = document.getElementById(`chip-${id}`);
-    if (chip) chip.remove();
-}
-
-// 暴露给全局的删除函数
+function removePendingChip(id) { document.getElementById(`chip-${id}`)?.remove(); }
 window.deletePending = function(id) {
-    state.pendingTranscripts = state.pendingTranscripts.filter(item => item.id !== id);
+    state.pendingTranscripts = state.pendingTranscripts.filter(i => i.id !== id);
     removePendingChip(id);
-    if (state.pendingTranscripts.length === 0) {
-        dom.pendingArea.classList.add('pending-hidden');
-    }
+    if (state.pendingTranscripts.length === 0) dom.pendingArea.classList.add('pending-hidden');
 };
 
 function resetHand() {
@@ -334,4 +311,8 @@ function updateStatusHeader(street) {
     const c = state.gameConfig;
     const straddleText = c.straddle ? ' <span style="color:#e74c3c;font-size:12px">抓</span>' : '';
     const currentStreet = street || 'Preflop';
-    dom.streetBadge.innerHTML = `${c.sb}/${c.bb}${straddleText} <span style="opacity:0.6
+    // 更新左上角：显示人数
+    dom.streetBadge.innerHTML = `${c.sb}/${c.bb}${straddleText} (${c.players}人) | ${currentStreet}`;
+}
+
+init();
