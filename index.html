@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>GTO 语音教练 Pro</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -14,7 +13,7 @@
             <div class="status-bar">
                 <span id="street-indicator" class="street-badge">1/2 | Preflop</span>
             </div>
-            <button id="settings-btn" class="icon-btn">⚙️</button>
+            <button id="settings-btn" class="icon-btn" style="z-index: 100;">⚙️</button>
         </header>
 
         <main id="chat-stream">
@@ -22,14 +21,13 @@
                 GTO 助手已就绪。<br>
                 1. 按住底部按钮说话<br>
                 2. 点击“获取建议”发送<br>
-                3. 支持简称：如 "红A" (Ah), "枪口" (UTG)
+                3. 设置里可调整盲注、人数和抓
             </div>
-            </main>
+        </main>
 
         <footer class="controls">
             <div id="pending-area" class="pending-hidden">
-                <div class="pending-list" id="audio-queue">
-                    </div>
+                <div class="pending-list" id="audio-queue"></div>
                 <button id="send-gto-btn" class="action-btn">🚀 获取 GTO 建议</button>
             </div>
 
@@ -45,16 +43,27 @@
 
     <div id="key-modal" class="modal hidden">
         <div class="modal-content">
-            <h3>♠️ 牌局设置</h3>
+            <h3>♠️ 牌局配置</h3>
             
             <div class="setting-group">
-                <label>盲注级别 (SB / BB)</label>
                 <div class="input-row">
-                    <input type="number" id="sb-input" placeholder="1" value="1">
-                    <span class="divider">/</span>
-                    <input type="number" id="bb-input" placeholder="2" value="2">
+                    <div style="flex:1">
+                        <label>盲注 (SB/BB)</label>
+                        <div class="flex-center">
+                            <input type="number" id="sb-input" placeholder="1" value="1">
+                            <span class="divider">/</span>
+                            <input type="number" id="bb-input" placeholder="2" value="2">
+                        </div>
+                    </div>
+                </div>
+                <div class="input-row" style="margin-top: 15px;">
+                    <label style="width: 60px;">人数:</label>
+                    <input type="number" id="players-input" value="8" placeholder="8">
+                    <span style="font-size:12px; color:#666; margin-left:5px">人桌</span>
                 </div>
             </div>
+
+            <hr class="separator">
 
             <div class="setting-group">
                 <label>特殊规则</label>
@@ -62,4 +71,23 @@
                     <span>带抓 (Straddle)?</span>
                     <input type="checkbox" id="straddle-toggle">
                 </div>
-                <div class="input-row" id="ante-row"
+                <div class="input-row" style="margin-top: 10px;">
+                    <label style="width: 60px;">Ante:</label>
+                    <input type="number" id="ante-input" placeholder="0" value="0">
+                </div>
+            </div>
+
+            <hr class="separator">
+
+            <div class="setting-group">
+                <label style="font-size: 12px; color: #666;">OpenAI API Key</label>
+                <input type="password" id="api-key-input" placeholder="sk-..." />
+            </div>
+
+            <button id="save-key-btn" class="save-btn">保存配置</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
